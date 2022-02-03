@@ -1,3 +1,3 @@
 # SketchLR
 
-Codes for Skething Logistic Regression
+Codes for Skething Kernel Logistic Regression
