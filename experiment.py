@@ -1,65 +1,83 @@
 
 from SKLR.SKLR import SKLR
+from KLR.KLR import KLR
 import numpy as np
 import time
 import scipy
 
 
 
-
+from distributions.synthetic_distributions import TestDistribution
 #import importlib
 #importlib.reload(some_module)
 
 
-from logistic_regression import LogisticRegression
+#from logistic_regression import LogisticRegression
 
-import sklearn
+from sklearn import linear_model,svm
+
+n_train=128
+n_test=3000
+d=5
 
 
 
-n=128
-d=10
-X0=np.random.rand(n//2,d)
-X1=np.random.rand(n//2,d)
-X=np.vstack([X0,-X1-1])
-Y0=np.ones(n//2)
-Y1=np.ones(n//2)
-Y=np.append(-Y0,Y1)
+distribution=TestDistribution(dim=d,index=2).returnDistribution()
+X_train,Y_train=distribution.sampling(n_train)
+
+
+X_test,Y_test=distribution.sampling(n_test)
+
+
+class_probability_X=distribution.density(X_train)
+
+
+
 
 
 time_start=time.time()
-model_SKLR=SKLR(X,Y)
+model_SKLR=SKLR(X_train,Y_train)
 model_SKLR.fit()
+model_SKLR.predict(X_test)
+print((model_SKLR.prediction==Y_test).sum()/n_test)
 time_end=time.time()
-print(time_end-time_start)
+print('%.2e' % (time_end-time_start))
 
 
 time_start=time.time()
-model_KLR=LogisticRegression(kernel="gaussian")
-model_KLR.fit(X, Y)
+model_KLR=KLR(X_train,Y_train)
+model_KLR.fit()
+model_KLR.predict(X_test)
+print((model_KLR.prediction==Y_test).sum()/n_test)
 time_end=time.time()
-print(time_end-time_start)
+print('%.2e' % (time_end-time_start))
 
 time_start=time.time()
-model_LR=sklearn.linear_model.LogisticRegression()
-model_LR.fit(X, Y)
+model_LR=linear_model.LogisticRegression()
+model_LR.fit(X_train,Y_train)
+prediction_LR=model_LR.predict(X_test)
+print((prediction_LR==(Y_test)).sum()/n_test)
 time_end=time.time()
-print(time_end-time_start)
+print('%.2e' % (time_end-time_start))
+
 
 time_start=time.time()
-model_LR=sklearn.linear_model.LogisticRegression()
-model_LR.fit(X, Y)
+model_SVC=svm.SVC(tol=1e-4)
+model_SVC.fit(X_train,Y_train)
+
+prediction_SVC=model_SVC.predict(X_test)
+print((prediction_SVC==(Y_test)).sum()/n_test)
+
+
 time_end=time.time()
-print(time_end-time_start)
+print('%.2e' % (time_end-time_start))
 
 time_start=time.time()
-model_SVC=sklearn.svm.SVC()
-model_SVC.fit(X, Y)
-time_end=time.time()
-print(time_end-time_start)
+model_linearSVC=svm.LinearSVC(tol=1e-4)
+model_linearSVC.fit(X_train,Y_train)
 
-time_start=time.time()
-model_linearSVC=sklearn.svm.linearSVC()
-model_linearSVC.fit(X, Y)
+prediction_linearSVC=model_linearSVC.predict(X_test)
+print((prediction_linearSVC==(Y_test)).sum()/n_test)
+
 time_end=time.time()
-print(time_end-time_start)
+print('%.2e' % (time_end-time_start))
