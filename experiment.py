@@ -1,6 +1,8 @@
 
 from SKLR.SKLR import SKLR
+from SKLR.SKLR_gradient import SKLR_gradient
 from KLR.KLR import KLR
+from KLR.KLR_gradient import KLR_gradient
 import numpy as np
 import time
 import scipy
@@ -16,9 +18,9 @@ from distributions.synthetic_distributions import TestDistribution
 
 from sklearn import linear_model,svm
 
-n_train=128
+n_train=4096
 n_test=3000
-d=5
+d=2
 
 
 
@@ -43,14 +45,31 @@ print((model_SKLR.prediction==Y_test).sum()/n_test)
 time_end=time.time()
 print('%.2e' % (time_end-time_start))
 
+time_start=time.time()
+#model_SKLR=SKLR_gradient(X_train,Y_train)
+#model_SKLR.fit()
+#model_SKLR.predict(X_test)
+
+#print((model_SKLR.prediction==Y_test).sum()/n_test)
+time_end=time.time()
+#print('%.2e' % (time_end-time_start))
+
 
 time_start=time.time()
 model_KLR=KLR(X_train,Y_train)
-model_KLR.fit()
-model_KLR.predict(X_test)
-print((model_KLR.prediction==Y_test).sum()/n_test)
+#model_KLR.fit()
+#model_KLR.predict(X_test)
+#print((model_KLR.prediction==Y_test).sum()/n_test)
 time_end=time.time()
-print('%.2e' % (time_end-time_start))
+#print('%.2e' % (time_end-time_start))
+
+time_start=time.time()
+#model_KLR=KLR_gradient(X_train,Y_train)
+#model_KLR.fit()
+#model_KLR.predict(X_test)
+#print((model_KLR.prediction==Y_test).sum()/n_test)
+time_end=time.time()
+#print('%.2e' % (time_end-time_start))
 
 time_start=time.time()
 model_LR=linear_model.LogisticRegression()
