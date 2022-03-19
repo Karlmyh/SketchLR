@@ -51,6 +51,23 @@ class TestDistribution(object):
         densityBinary = BinaryClassificationDistribution(density_seq, prob_seq)
         return densityBinary
     
+    
+    def testDistribution_3(self,dim):
+        
+        density1 = MultivariateNormalDistribution(mean=np.zeros(dim)+1,cov=np.diag(np.ones(dim)*1)) 
+        density2 = MultivariateNormalDistribution(mean=np.zeros(dim)-1,cov=np.diag(np.ones(dim)*1)) 
+        density_seq_1 = [density1, density2]
+        prob_seq_1 = [0.4,0.6]
+        densitymix = MixedDistribution(density_seq_1, prob_seq_1)
+        
+        density3=MultivariateNormalDistribution(mean=np.zeros(dim),cov=np.diag(np.ones(dim)*1)) 
+    
+        density_seq = [densitymix, density3]
+        prob_seq = [0.5,0.5]
+        
+        densityBinary = BinaryClassificationDistribution(density_seq, prob_seq)
+        return densityBinary
+    
     '''
     def testDistribution_2(self,dim):
         density1 = MultivariateNormalDistribution(mean=np.zeros(dim)+1,cov=np.diag(np.ones(dim)*0.25)) 
