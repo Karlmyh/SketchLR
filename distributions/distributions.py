@@ -313,12 +313,14 @@ class BinaryClassificationDistribution(Distribution):
     # return density at given vector of point
     def density(self, sample_X):
         num_samples = sample_X.shape[0]
-        pdf_true = np.zeros([num_samples,self.num_mix], dtype=np.float64) 
+        exp_lr_true = np.zeros([num_samples,self.num_mix], dtype=np.float64) 
         for i in range(self.num_mix):
             prob = self.prob_seq[i]
             density = self.density_seq[i]
-            pdf_true[:,i] += prob * density.density(sample_X)
-        return pdf_true
+            exp_lr_true[:,i] += prob * density.density(sample_X)
+        
+        exp_lr_true=exp_lr_true/exp_lr_true.sum(axis=1).reshape(-1,1)
+        return exp_lr_true
         
         
         
