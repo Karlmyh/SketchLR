@@ -53,22 +53,22 @@ class MultivariateNormalDistribution(Distribution):
         return multivariate_normal.pdf(sample_X, mean=self.mean, cov=self.cov)
 
 class UniformDistribution(Distribution): 
-    def __init__(self, low, upper):
+    def __init__(self, lower, upper):
         super(UniformDistribution, self).__init__()
-        low=np.array(low).ravel()
+        lower=np.array(lower).ravel()
         upper=np.array(upper).ravel()
-        self.dim=len(low)
-        self.low = low
+        self.dim=len(lower)
+        self.lower = lower
         self.upper = upper
         
     def sampling(self, num_samples):
             
-        return np.random.rand(num_samples,self.dim)*(self.upper-self.low)+self.low
+        return np.random.rand(num_samples,self.dim)*(self.upper-self.lower)+self.lower
     
     def density(self, sample_X):
-        in_interval_low=np.array([(sample_X[i]>=self.low).all() for i in range(len(sample_X))])
+        in_interval_low=np.array([(sample_X[i]>=self.lower).all() for i in range(len(sample_X))])
         in_interval_up=np.array([(sample_X[i]<=self.upper).all() for i in range(len(sample_X))])
-        return in_interval_low*in_interval_up/np.prod(self.upper-self.low)
+        return in_interval_low*in_interval_up/np.prod(self.upper-self.lower)
 
 
 class LaplaceDistribution(Distribution):
@@ -286,41 +286,51 @@ class BinaryClassificationDistribution(Distribution):
         super(BinaryClassificationDistribution, self).__init__()
         self.density_seq=density_seq
         self.prob_seq = prob_seq
-        self.num_mix = len(density_seq)
         self.dim=density_seq[0].dim
+        
+        assert len(density_seq)==2
+        
         for i in range(1,len(density_seq)):
             assert density_seq[i].dim==self.dim
+        
     def sampling(self, num_samples):
-        rd_idx = np.random.choice(self.num_mix,size=num_samples, 
+        rd_idx = np.random.choice(2,size=num_samples, 
                                   replace=True, p=self.prob_seq)
         sample_X = []
         sample_Y = np.array([])
-        for i in range(self.num_mix):
+        for i in range(2):
             num_i = np.sum(rd_idx == i)
             density = self.density_seq[i]
             sample_Xi, _ = density.generate(num_i)
             sample_X.append(sample_Xi)
+            
             # is binary classification let Y be -1 and 1
-            if self.num_mix==2:
-                sample_Y=np.append(sample_Y,np.repeat(2*i-1, num_i))
-            else:
-                sample_Y=np.append(sample_Y,np.repeat(i, num_i))
+            sample_Y=np.append(sample_Y,np.repeat(2*i-1, num_i))
+            
         sample_X = np.concatenate(sample_X, axis=0)
-        #np.random.shuffle(sample_X)
-        #sample_Y=sample_Y.ravel()
+
         return sample_X,sample_Y
     
     # return density at given vector of point
-    def density(self, sample_X):
+    def class_probability(self, sample_X):
         num_samples = sample_X.shape[0]
-        exp_lr_true = np.zeros([num_samples,self.num_mix], dtype=np.float64) 
-        for i in range(self.num_mix):
+        exp_lr_true = np.zeros([num_samples,2], dtype=np.float64) 
+        for i in range(2):
             prob = self.prob_seq[i]
             density = self.density_seq[i]
             exp_lr_true[:,i] += prob * density.density(sample_X)
         
         exp_lr_true=exp_lr_true/exp_lr_true.sum(axis=1).reshape(-1,1)
         return exp_lr_true
+    
+    def label(self,sample_X):
+        exp_lr_true=self.density(sample_X)
+        y=[]
+        for i in range(sample_X.shape[0]):
+            y.append(2*np.random.choice(2,size=1,p=exp_lr_true[i])-1)
+            
+        return np.array(y)
+        
         
         
         

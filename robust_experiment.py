@@ -18,11 +18,11 @@ from distributions.synthetic_distributions import TestDistribution
 
 from sklearn import linear_model,svm
 
-n_train=512
+n_train=256
 n_test=3000
-num_noise=50
+num_noise=1
 n_noise=n_train
-d=3
+d=2
 
 
 
@@ -39,13 +39,13 @@ X_noise,Y_noise=distribution.sampling(n_noise)
 
 class_probability_X=distribution.density(X_train)
 
-
+# write a sampling procedure
 
 
 influence_SVC=0
 influence_DSKLR=0
 influence_RSKLR=0
-influence_KLR=0
+influence_SKLR=0
 
 
 
@@ -57,7 +57,7 @@ for i in range(n_noise):
     index=np.random.choice(n_noise,size=num_noise,replace=False)
     #print(index)
     X_train=np.vstack([np.delete(X_train_original,index,axis=0),[X_noise[i] for _ in range(num_noise) ]])
-    Y_train=np.append(np.delete(Y_train_original,index),np.random.choice([-1,1],size=num_noise,p=[1/2,1/2]))
+    Y_train=np.append(np.delete(Y_train_original,index),distribution.label(X_noise[i].reshape(1,-1)))
     #print(X_train.shape)
     #print(Y_train.shape)
     data=np.column_stack((X_train,Y_train))
@@ -106,20 +106,20 @@ for i in range(n_noise):
     #print('%.2e' % (time_end-time_start))
     
     #time_start=time.time()
-    '''
-    model_KLR=KLR(X_train,Y_train)
-    model_KLR.fit()
-    model_KLR.predict(X_test)
-    acc_modified=(model_KLR.prediction==Y_test).sum()
     
-    model_KLR=KLR(X_train_original,Y_train_original)
-    model_KLR.fit()    
-    model_KLR.predict(X_test)
-    acc_original=(model_KLR.prediction==Y_test).sum()
+    model_SKLR=SKLR(X_train,Y_train)
+    model_SKLR.fit()
+    model_SKLR.predict(X_test)
+    acc_modified=(model_SKLR.prediction==Y_test).sum()
     
-    influence_KLR+=abs(acc_modified-acc_original)
+    model_SKLR=SKLR(X_train_original,Y_train_original)
+    model_SKLR.fit()    
+    model_SKLR.predict(X_test)
+    acc_original=(model_SKLR.prediction==Y_test).sum()
     
-    '''
+    influence_SKLR+=abs(acc_modified-acc_original)
+    
+    
     
     
     model_SVC=svm.SVC(tol=1e-3)
@@ -138,4 +138,4 @@ for i in range(n_noise):
     influence_SVC+=abs(acc_modified-acc_original)
     #influence_SVC+=acc_modified-acc_original
 
-print([influence_DSKLR,influence_RSKLR,influence_SVC])
+print([influence_SKLR,influence_DSKLR,influence_RSKLR,influence_SVC])
