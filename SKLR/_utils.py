@@ -75,12 +75,12 @@ def optimize_jit(n, m, lamda, K, SK, KS, SKS, Y, alpha, epsilon, max_iter):
 
 def optimize_nonjit(n, m, lamda, K, SK, KS, SKS, Y, alpha, epsilon, max_iter):
     
-
+   
     SKKS=np.zeros((n,m,m))
     SKWKS=np.zeros((m,m))
 
     for i in range(n):
-
+       
         SKKS[i]= KS[i].reshape(m,1) @ KS[i].reshape(1,m)
 
     loss_save=1e10
