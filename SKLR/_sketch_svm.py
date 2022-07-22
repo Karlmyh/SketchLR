@@ -274,59 +274,14 @@ class SKSVM(object):
           
 
         
-    def optimize_nonjit(self, n, m, lamda, K, SK, KS, SKS, Y, alpha, epsilon, max_iter):
-
-
-        SKKS=np.zeros((n,m,m))
-        SKWKS=np.zeros((m,m))
-
-        for i in range(n):
-
-            SKKS[i]= KS[i].reshape(m,1) @ KS[i].reshape(1,m)
-
-        loss_save=1e10
-        loss=1e5
-        iteration=0
-
-        p=.5 * (1 + np.tanh(.5 * KS@ alpha))
-        W=p-p**2
-        # flag for oscilation
-        flag=1
-
-        while(abs(loss_save-loss)>epsilon and iteration <max_iter and loss>0.1 and flag):
-
-
-            iteration+=1
-
-            if iteration<10:
-                loss_save=loss
-            else:
-                if loss_save<loss:
-                    flag=0
-                else:
-                    loss_save=loss
-
-            #print(SKKS)
-
-            for i in range(n):
-                SKWKS=SKWKS+SKKS[i]*W[i]
-
-            #print(SKWKS)
-
-            inv_part=np.linalg.pinv(SKWKS+lamda * SKS,hermitian=True )
-            #inv_part=np.linalg.inv(SKWKS+lamda * SKS )
-            add_part_1=SKWKS @ alpha
-            add_part_2=SK@ (Y*(1-p))
-
-
-            alpha=inv_part@(add_part_1+add_part_2)
-
-            loss=-np.log(.5 * (1 + np.tanh(.5 * (Y*( KS @ alpha))))+1e-30 ).mean()
-            p=.5 * (1 + np.tanh(.5 * KS@ alpha))
-            W=p-p**2
-            print(((self.Y_>0)==(p>0.5)).mean())
-
-        return iteration, loss, alpha, p
+   
+    
+    def score(self, X, y):
+        K=kernel_matrix(self.X_,self.kernel_,X)
+        SK_test=self.sketcher_.Apply(K, sketch_dimension=self.sketch_dimension_)
+        test_probability=sigmoid(np.matmul(self.alpha_.T, SK_test)).ravel()
+        
+        return ((y>0)==(test_probability>0.5)).mean()
         
     def predict(self,X_test):
 
@@ -343,71 +298,4 @@ class SKSVM(object):
         return self.test_probability
     
     
-    def fit_check(self, X_train, Y):
-        
-        if len(Y.shape)==2:
-            self.Y_=Y
-        elif len(Y.shape)==1:
-            self.Y_=Y.reshape(-1,1)
-        else:
-            raise ValueError("invalid Y dimension: '{}'".format(Y.shape))
-            
-        if self.Y_.shape[0]==X_train.shape[0]:
-            self.X_=X_train
-        else:
-            raise ValueError("Mismatch X dimension {} and Y dimension {}".format(X_train.shape,self.Y_.shape))
-            
-            
-        # set methods
-        self.kernel_ = self._choose_kernel(self.kernel)
-        self.sketcher_ = SKETCH_DICT[self._choose_sketch( self.sketch_method)]()
-        
-        # read X
-        self.n_train_=X_train.shape[0]
-        self.dim_=X_train.shape[1]
-        
-        # build kernel matrix
-        self.training_data_=X_train
-        self.K_=kernel_matrix( X_train, self.kernel_)
-        
-        # set lamda and m
-        self.sketch_dimension_=self._choose_sketch_dimension(self.sketch_dimension,self.n_train_)
-        self.lamda_=self._choose_lamda(self.lamda,self.n_train_)
-        
-        
-        # pre-computing
-       
-        self.SK_  = self.sketcher_.Apply(self.K_, sketch_dimension=self.sketch_dimension_)
-        
-        self.KS_=np.transpose(self.SK_)
-        self.SKS_ = self.sketcher_.Apply(self.KS_ , sketch_dimension=self.sketch_dimension_)
-        
-        self.alpha_=np.random.normal(0,0.1,(self.sketch_dimension_,1))
-        
-        # optimize 
-        
-        self.alpha_, self.alpha_save_= optimize_check(self.n_train_, self.sketch_dimension_,
-                                                                              self.lamda_, self.K_,
-                                                                              self.SK_, self.KS_, self.SKS_,
-                                                                              self.Y_, self.alpha_, 
-                                                                              self.precision, self.max_iter)
-
-    
-    
-    def predict_check(self,X_test):
-
-        self.X_test=X_test
-        self.K_test=kernel_matrix(self.X_,self.kernel_,self.X_test)
-        self.SK_test=self.sketcher_.Apply(self.K_test, sketch_dimension=self.sketch_dimension_)
-        
-        
-        
-        
-        sigmoid(np.matmul(self.alpha_.T, self.SK_test))
-        
-        
-        return sigmoid(np.matmul(self.alpha_.T, self.SK_test)), sigmoid(np.matmul(self.alpha_save_.T, self.SK_test))
-            
-            
-        
-        
+  
