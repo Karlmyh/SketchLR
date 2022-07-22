@@ -12,8 +12,9 @@ __all__ = ['GaussianSketch', 'CountSketch', 'SubsamplingSketch',"SRHT"]
 def gaussian_apply(matrix,sketch_matrix,apply_left,apply_right):
     if apply_left:
         matrix=  sketch_matrix @ matrix
-    if apply_right:        
-        matrix=  matrix @ sketch_matrix.T
+    if apply_right:   
+        transpose_sketch_matrix=np.ascontiguousarray(sketch_matrix.T)
+        matrix=  matrix @ transpose_sketch_matrix
     return matrix
 
 @njit

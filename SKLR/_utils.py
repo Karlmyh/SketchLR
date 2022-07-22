@@ -42,7 +42,7 @@ def optimize_jit(n, m, lamda, K, SK, KS, SKS, Y, alpha, epsilon, max_iter):
         
         iteration+=1
         
-        if iteration<10:
+        if iteration<60:
             loss_save=loss
         else:
             if loss_save<loss:

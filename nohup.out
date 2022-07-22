@@ -1,0 +1,4 @@
+/home/karl/SketchLR/SKLR/_sketches.py:17: NumbaPerformanceWarning: [1m[1m'@' is faster on contiguous arrays, called on (array(float64, 2d, A), array(float64, 2d, C))[0m[0m
+  matrix=  matrix @ transpose_sketch_matrix
+/home/karl/anaconda3/lib/python3.7/site-packages/numba/core/typing/npydecl.py:930: NumbaPerformanceWarning: [1m'@' is faster on contiguous arrays, called on (array(float64, 2d, A), array(float64, 2d, C))[0m
+  warnings.warn(NumbaPerformanceWarning(msg))
