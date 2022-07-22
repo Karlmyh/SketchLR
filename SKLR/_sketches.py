@@ -2,6 +2,7 @@ import numpy as np
 import math
 from sklearn.utils import check_random_state
 from numba import njit
+from scipy.linalg import hadamard
 
 
 
@@ -58,97 +59,25 @@ def subsampling_apply(matrix,
     return matrix
 
 
-@njit
-def FWHT(X,apply_left):
-
-    if len(X.shape)==2:
-        if apply_left:
-            transformed_dim=int(2**np.ceil(np.log2(X.shape[0])))
-            padding_num=transformed_dim-X.shape[0]
-        else:
-            transformed_dim=int(2**np.ceil(np.log2(X.shape[1])))
-            padding_num=transformed_dim-X.shape[1]
-    else:
-        #print("{} is not valid dimensions for WHT".format(X.shape))
-        print(X.shape)
-        
-    if apply_left:
-        
-        transformed_X=np.zeros((transformed_dim,X.shape[1]))
-        for col_idx in range(X.shape[1]):
-            x=np.append(X[:,col_idx],np.zeros(padding_num))
-           
-            N = x.size
-         
-            num_group = N//2 # Number of Groups
-            num_mem = 2 # Number of Members in Each Group
-        
-            # First stage
-            y = np.zeros((N//2,2))
-            y[:,0] = x[0::2] + x[1::2]
-            y[:,1] = x[0::2] - x[1::2]
-            x = y.copy()
-            # Second and further stage
-            for nStage in range(2,int(np.log2(N))+1):
-                y = np.zeros((num_group//2,num_mem*2))
-                y[0:num_group//2,0:num_mem*2:4] = x[0:num_group:2,0:num_mem:2] + x[1:num_group:2,0:num_mem:2]
-                y[0:num_group//2,1:num_mem*2:4] = x[0:num_group:2,0:num_mem:2] - x[1:num_group:2,0:num_mem:2]
-                y[0:num_group//2,2:num_mem*2:4] = x[0:num_group:2,1:num_mem:2] - x[1:num_group:2,1:num_mem:2]
-                y[0:num_group//2,3:num_mem*2:4] = x[0:num_group:2,1:num_mem:2] + x[1:num_group:2,1:num_mem:2]
-                x = y.copy()
-                num_group = num_group//2
-                num_mem = num_mem*2
-            x = y[0,:]
-            
-            transformed_X[:,col_idx]=x
-        
-    
-    else:
-        transformed_X=np.zeros((X.shape[0],transformed_dim))
-        for row_idx in range(X.shape[0]):
-            x=np.append(X[row_idx,:],np.zeros(padding_num))
-            N = x.size
-            num_group = N//2 # Number of Groups
-            num_mem = 2 # Number of Members in Each Group
-        
-            # First stage
-            y = np.zeros((N//2,2))
-            y[:,0] = x[0::2] + x[1::2]
-            y[:,1] = x[0::2] - x[1::2]
-            x = y.copy()
-            # Second and further stage
-            for nStage in range(2,int(np.log2(float(N)))+1):
-                y = np.zeros((num_group//2,num_mem*2))
-                y[0:num_group//2,0:num_mem*2:4] = x[0:num_group:2,0:num_mem:2] + x[1:num_group:2,0:num_mem:2]
-                y[0:num_group//2,1:num_mem*2:4] = x[0:num_group:2,0:num_mem:2] - x[1:num_group:2,0:num_mem:2]
-                y[0:num_group//2,2:num_mem*2:4] = x[0:num_group:2,1:num_mem:2] - x[1:num_group:2,1:num_mem:2]
-                y[0:num_group//2,3:num_mem*2:4] = x[0:num_group:2,1:num_mem:2] + x[1:num_group:2,1:num_mem:2]
-                x = y.copy()
-                num_group = num_group//2
-                num_mem = num_mem*2
-            x = y[0,:]
-            
-            transformed_X[row_idx,:]=x
-        
-    return transformed_X
 
 @njit
 def srht_apply(matrix,
         sketch_dimension,
         rademacher,
         hashed_index,
+        hadamard_matrix,
         apply_left,
         apply_right):
     
     if apply_left:
         matrix = 1/math.sqrt(sketch_dimension)*rademacher.reshape(-1, 1) * matrix
-        matrix = FWHT( matrix,1)
+        matrix = hadamard_matrix.T @ matrix
         matrix=matrix[hashed_index,:]
               
     if apply_right:
         
         matrix = matrix *(rademacher/math.sqrt(sketch_dimension))
-        matrix =  FWHT(matrix ,0)
+        matrix =   matrix@ hadamard_matrix
         matrix=matrix[:,hashed_index]
         
     return matrix
@@ -362,7 +291,7 @@ class SRHT(SketchClass):
         np.random.set_state(self.random_state)
         
         hashed_index = np.random.choice(original_dimension, sketch_dimension, replace=False)
-        
+        hadamard_matrix=hadamard(int(2**np.ceil(np.log2(original_dimension))))[:original_dimension,:original_dimension]
         
         rademacher = np.random.choice(2, original_dimension, replace=True) * 2 - 1 
         np.random.set_state(temp_state)
@@ -371,6 +300,7 @@ class SRHT(SketchClass):
                 sketch_dimension,
                 rademacher,
                 hashed_index,
+                hadamard_matrix,
                 apply_left,
                 apply_right)
     

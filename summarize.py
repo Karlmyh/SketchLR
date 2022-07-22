@@ -18,13 +18,13 @@ for method in method_seq:
     log = pd.read_csv("{}/{}.csv".format(log_file_dir,method), header=None)
     
 
-    log.columns = "distribution,dim,sketch_dim,iterate,n_train,n_test,accuracy,tv_distance,time".split(',')
+    log.columns = "distribution,dim,sketch_dim,iterate,n_train,n_test,accuracy,tv_distance,time,lambda".split(',')
     log["method"]=method
     summarize_log=summarize_log.append(log)
     
     
 print(summarize_log.columns)
-summary = pd.pivot_table(summarize_log, index=["dim", "method","sketch_dim"],columns=["distribution","n_train"], values=["accuracy", "time"], aggfunc=[np.mean, np.std, len])
+summary = pd.pivot_table(summarize_log, index=[ "sketch_dim", "lambda","method"],columns=["dim","distribution"], values=["accuracy", "time"], aggfunc=[np.mean, np.std, len])
 
 summary.to_excel("./result/sorted_result/simulation.xlsx")
 
