@@ -36,7 +36,7 @@ class SKSVM(object):
                  sketch_method="auto",
                  precision=1e-2,
                  max_iter=50,
-                 if_jit=True,
+                 if_jit=False,
                  random_state=1,
                  ):
         
@@ -266,7 +266,7 @@ class SKSVM(object):
                                                                                   self.Y_, self.alpha_, 
                                                                                   self.precision, self.max_iter)
             else:
-                self.iteration_, self.loss_, self.alpha_, self.probability_= optimize_nonjit(self.n_train_, self.sketch_dimension_,
+                self.iteration_, self.loss_, self.alpha_, self.probability_= optimize_nonjit(self.n_train_,  self.sketch_dimension_,
                                                                                   self.lamda_, self.K_,
                                                                                   self.SK_, self.KS_, self.SKS_,
                                                                                   self.Y_, self.alpha_, 
@@ -274,7 +274,59 @@ class SKSVM(object):
           
 
         
-        
+    def optimize_nonjit(self, n, m, lamda, K, SK, KS, SKS, Y, alpha, epsilon, max_iter):
+
+
+        SKKS=np.zeros((n,m,m))
+        SKWKS=np.zeros((m,m))
+
+        for i in range(n):
+
+            SKKS[i]= KS[i].reshape(m,1) @ KS[i].reshape(1,m)
+
+        loss_save=1e10
+        loss=1e5
+        iteration=0
+
+        p=.5 * (1 + np.tanh(.5 * KS@ alpha))
+        W=p-p**2
+        # flag for oscilation
+        flag=1
+
+        while(abs(loss_save-loss)>epsilon and iteration <max_iter and loss>0.1 and flag):
+
+
+            iteration+=1
+
+            if iteration<10:
+                loss_save=loss
+            else:
+                if loss_save<loss:
+                    flag=0
+                else:
+                    loss_save=loss
+
+            #print(SKKS)
+
+            for i in range(n):
+                SKWKS=SKWKS+SKKS[i]*W[i]
+
+            #print(SKWKS)
+
+            inv_part=np.linalg.pinv(SKWKS+lamda * SKS,hermitian=True )
+            #inv_part=np.linalg.inv(SKWKS+lamda * SKS )
+            add_part_1=SKWKS @ alpha
+            add_part_2=SK@ (Y*(1-p))
+
+
+            alpha=inv_part@(add_part_1+add_part_2)
+
+            loss=-np.log(.5 * (1 + np.tanh(.5 * (Y*( KS @ alpha))))+1e-30 ).mean()
+            p=.5 * (1 + np.tanh(.5 * KS@ alpha))
+            W=p-p**2
+            print(((self.Y_>0)==(p>0.5)).mean())
+
+        return iteration, loss, alpha, p
         
     def predict(self,X_test):
 

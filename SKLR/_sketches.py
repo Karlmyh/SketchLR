@@ -71,7 +71,8 @@ def srht_apply(matrix,
     
     if apply_left:
         matrix = 1/math.sqrt(sketch_dimension)*rademacher.reshape(-1, 1) * matrix
-        matrix = hadamard_matrix.T @ matrix
+        transpose_hadamard_matrix=np.ascontiguousarray(hadamard_matrix.T)
+        matrix = transpose_hadamard_matrix @ matrix
         matrix=matrix[hashed_index,:]
               
     if apply_right:
@@ -291,7 +292,7 @@ class SRHT(SketchClass):
         np.random.set_state(self.random_state)
         
         hashed_index = np.random.choice(original_dimension, sketch_dimension, replace=False)
-        hadamard_matrix=hadamard(int(2**np.ceil(np.log2(original_dimension))))[:original_dimension,:original_dimension]
+        hadamard_matrix=hadamard(int(2**np.ceil(np.log2(original_dimension))),dtype=float)[:original_dimension,:original_dimension]
         
         rademacher = np.random.choice(2, original_dimension, replace=True) * 2 - 1 
         np.random.set_state(temp_state)
