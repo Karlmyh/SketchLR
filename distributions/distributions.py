@@ -222,6 +222,32 @@ class UniformCircleDistribution(Distribution):
         pdf=np.array([np.linalg.norm(sample_X[i],ord=2)==self.radius for i in range(len(sample_X))])
         
         return pdf
+    
+class UniformCapDistribution(Distribution):
+    def __init__(self, level,dim,ifreverse=True):
+        super(UniformCapDistribution, self).__init__()
+        
+        
+        self.level=level
+        self.dim=dim
+        self.ifreverse=ifreverse
+        
+        
+    def sampling(self, num_samples):
+        sample=multivariate_normal.rvs(mean=np.zeros(self.dim),
+                                       cov=np.diag(np.ones(self.dim)),
+                                       size=num_samples).reshape(-1,self.dim)
+        for i in range(num_samples):
+            sample[i]=sample[i]/np.linalg.norm(sample[i],ord=2)
+            
+        sample=sample[sample[:,0]*self.ifreverse>self.level]
+        return sample
+    
+    def density(self, sample_X):
+        pdf=np.array([(np.linalg.norm(sample_X[i],ord=2)==1 and sample_X[i]*self.ifreverse>self.level) for i in range(len(sample_X))])
+        
+
+        return pdf
 
     
 class MarginalDistribution(Distribution):

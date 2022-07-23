@@ -10,7 +10,8 @@ from .distributions import (LaplaceDistribution,
                           CauchyDistribution,
                           CosineDistribution,
                           TDistribution,
-                          BinaryClassificationDistribution
+                          BinaryClassificationDistribution,
+                          UniformCapDistribution
                           )
 import numpy as np
 import math
@@ -66,8 +67,8 @@ class TestDistribution(object):
     
     def testDistribution_4(self,dim):
         
-        density1 = UniformDistribution(lower=np.ones(dim)*0,upper=np.ones(dim)*0.5) 
-        density2 = UniformDistribution(lower=np.ones(dim)*0.4,upper=np.ones(dim)*1) 
+        density1 = UniformCapDistribution(level=-0.1,dim=dim,ifreverse=True)
+        density2 = UniformCapDistribution(level=-0.1,dim=dim,ifreverse=False)
         
     
         density_seq = [density1, density2]
