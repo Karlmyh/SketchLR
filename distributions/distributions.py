@@ -224,30 +224,77 @@ class UniformCircleDistribution(Distribution):
         return pdf
     
 class UniformCapDistribution(Distribution):
-    def __init__(self, level,dim,ifreverse=True):
+    def __init__(self, propotion,dim,postive_direction=True):
         super(UniformCapDistribution, self).__init__()
         
         
-        self.level=level
+        self.propotion=propotion
         self.dim=dim
-        self.ifreverse=ifreverse
+        self.postive_direction=postive_direction
         
         
     def sampling(self, num_samples):
-        sample=multivariate_normal.rvs(mean=np.zeros(self.dim),
-                                       cov=np.diag(np.ones(self.dim)),
-                                       size=num_samples).reshape(-1,self.dim)
-        for i in range(num_samples):
-            sample[i]=sample[i]/np.linalg.norm(sample[i],ord=2)
+        
+        angle_matrix=np.zeros((num_samples,self.dim-1))
+        
+        assert self.dim>1
+        if self.dim==2:
+            # central vector point up
+            if self.postive_direction:
+                angle_matrix[:,0]=np.random.rand(num_samples)*np.pi*(1+2*self.propotion)-np.pi*self.propotion
+            else:
+                angle_matrix[:,0]=np.random.rand(num_samples)*np.pi*(1+2*self.propotion)-np.pi*self.propotion+np.pi
+        else:
+            if self.postive_direction:
+                angle_matrix[:,0]=np.random.rand(num_samples)*np.pi*(1+self.propotion)/2
+            else:
+                angle_matrix[:,0]=np.random.rand(num_samples)*np.pi*(1+self.propotion)/2+np.pi*(1-self.propotion)/2
+            for i in range(1,self.dim-2):
+                angle_matrix[:,i]=np.random.rand(num_samples)*np.pi
+
+
             
-        sample=sample[sample[:,0]*self.ifreverse>self.level]
-        return sample
+            angle_matrix[:,self.dim-2]=np.random.rand(num_samples)*np.pi*2
+          
+        samples=[]
+        for i in range(num_samples):
+            sample=[]
+            for j in range(self.dim-1):
+                temp=1
+                
+                temp*=np.cos(angle_matrix[i,j])
+                for k in range(j):
+                    temp*=np.sin(angle_matrix[i,k])
+                sample.append(temp)
+            
+            temp=1
+            for k in range(self.dim-1):
+                temp*=np.sin(angle_matrix[i,k])
+            sample.append(temp)
+            
+            
+            samples.append(sample)
+            
+        
+        return np.array(samples)
     
     def density(self, sample_X):
-        pdf=np.array([(np.linalg.norm(sample_X[i],ord=2)==1 and sample_X[i]*self.ifreverse>self.level) for i in range(len(sample_X))])
+        ans=[]
+        for i in range(sample_X.shape[0]):
+            if self.postive_direction:
+                if sample_X[i,0]>-np.sin(self.propotion*np.pi/2):
+                    ans.append(1)
+                else:
+                    ans.append(0)
+            else:
+                if sample_X[i,0]<np.sin(self.propotion*np.pi/2):
+                    ans.append(1)
+                else:
+                    ans.append(0)
+        return np.array(ans)
         
 
-        return pdf
+        
 
     
 class MarginalDistribution(Distribution):
@@ -257,6 +304,7 @@ class MarginalDistribution(Distribution):
         self.dim_vector=np.array([],dtype='int32')
         for i in range(len(density_object_vector)):
             self.dim_vector=np.append(self.dim_vector,density_object_vector[i].dim)
+        self.dim=self.dim_vector.sum()
             
     def sampling(self, num_samples):
         
@@ -331,7 +379,7 @@ class BinaryClassificationDistribution(Distribution):
             sample_X.append(sample_Xi)
             
             # is binary classification let Y be -1 and 1
-            sample_Y=np.append(sample_Y,np.repeat(2*i-1, num_i))
+            sample_Y=np.append(sample_Y,np.repeat(2*i-1, sample_Xi.shape[0]))
             
         sample_X = np.concatenate(sample_X, axis=0)
 
@@ -350,7 +398,7 @@ class BinaryClassificationDistribution(Distribution):
         return exp_lr_true
     
     def label(self,sample_X):
-        exp_lr_true=self.density(sample_X)
+        exp_lr_true=self.class_probability(sample_X)
         y=[]
         for i in range(sample_X.shape[0]):
             y.append(2*np.random.choice(2,size=1,p=exp_lr_true[i])-1)

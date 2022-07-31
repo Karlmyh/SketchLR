@@ -282,6 +282,9 @@ class SKSVM(object):
         test_probability=sigmoid(np.matmul(self.alpha_.T, SK_test)).ravel()
         
         return ((y>0)==(test_probability>0.5)).mean()
+    
+    #def select_params(self, X, y, params):
+        
         
     def predict(self,X_test):
 

@@ -55,11 +55,16 @@ class TestDistribution(object):
     
     def testDistribution_3(self,dim):
         
-        density1 = UniformDistribution(lower=np.ones(dim)*0,upper=np.ones(dim)*0.5) 
-        density2 = UniformDistribution(lower=np.ones(dim)*0.5,upper=np.ones(dim)*1) 
         
+        density1 = UniformDistribution(lower=0,upper=0.5) 
+        density2 = UniformDistribution(lower=0.5,upper=1) 
+        density_vec=[density1, density2]
+        mixed_density_1=MixedDistribution(density_vec,[0.2,0.8])
+        mixed_density_2=MixedDistribution(density_vec,[0.8,0.2])
+        density_class_1=MarginalDistribution([mixed_density_1 for _ in range(dim)])
+        density_class_2=MarginalDistribution([mixed_density_2 for _ in range(dim)])
     
-        density_seq = [density1, density2]
+        density_seq = [density_class_1, density_class_2]
         prob_seq = [0.5,0.5]
         
         densityBinary = BinaryClassificationDistribution(density_seq, prob_seq)
@@ -67,8 +72,8 @@ class TestDistribution(object):
     
     def testDistribution_4(self,dim):
         
-        density1 = UniformCapDistribution(level=-0.1,dim=dim,ifreverse=True)
-        density2 = UniformCapDistribution(level=-0.1,dim=dim,ifreverse=False)
+        density1 = UniformCapDistribution(propotion=0.1,dim=dim,postive_direction=True)
+        density2 = UniformCapDistribution(propotion=0.1,dim=dim,postive_direction=False)
         
     
         density_seq = [density1, density2]
