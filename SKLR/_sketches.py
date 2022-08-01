@@ -305,3 +305,13 @@ class SRHT(SketchClass):
                 apply_left,
                 apply_right)
     
+
+class Identity(SketchClass):
+
+    def Apply(self, matrix, 
+              sketch_dimension="auto",
+              apply_left  = True,
+              apply_right = False):
+              
+        return matrix
+    

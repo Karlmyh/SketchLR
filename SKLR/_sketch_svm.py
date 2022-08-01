@@ -1,6 +1,6 @@
 import numpy as np
 from ._utils import kernel_matrix, optimize_jit, optimize_nonjit, sigmoid, optimize_check
-from ._sketches import GaussianSketch, CountSketch, SubsamplingSketch, SRHT
+from ._sketches import GaussianSketch, CountSketch, SubsamplingSketch, SRHT, Identity
 from sklearn.utils import check_random_state
 from time import time 
 
@@ -26,7 +26,8 @@ VALID_KERNELS = [
 SKETCH_DICT = {"GaussianSketch": GaussianSketch, 
                "CountSketch": CountSketch, 
                "SubsamplingSketch":SubsamplingSketch,
-               "SRHT":SRHT}
+               "SRHT":SRHT,
+               "Identity":Identity}
 
 class SKSVM(object):
     def __init__(self,
@@ -196,15 +197,12 @@ class SKSVM(object):
             hashed_index = np.random.choice(X_train.shape[0], self.sketch_dimension_, replace=False)
             
             np.random.set_state(temp_state)
-            self.subsampled_training_data_=self.X_[hashed_index,:]
-            self.subsampled_label_=self.Y_[hashed_index].reshape(-1,1)
-            self.K_=kernel_matrix( self.subsampled_training_data_, self.kernel_)
+            subsampled_training_data_=self.X_[hashed_index,:]
+            subsampled_label_=self.Y_[hashed_index].reshape(-1,1)
+            K_=kernel_matrix( subsampled_training_data_, self.kernel_)
         
        
             
-            self.SK_  = self.K_
-            self.KS_  = self.K_
-            self.SKS_ = self.K_
             
            
             self.alpha_=np.random.normal(0,0.1,(self.sketch_dimension_,1)) 
@@ -213,20 +211,20 @@ class SKSVM(object):
             if self.if_jit:
          
                 self.iteration_, self.loss_, self.alpha_, self.probability_= optimize_jit(self.sketch_dimension_, self.sketch_dimension_,
-                                                                                  self.lamda_, self.K_,
-                                                                                  self.SK_, self.KS_, self.SKS_,
-                                                                                  self.subsampled_label_, self.alpha_, 
+                                                                                  self.lamda_, K_,
+                                                                                  K_,K_,K_,
+                                                                                  subsampled_label_, self.alpha_, 
                                                                                   self.precision, self.max_iter)
             else:
 
                 self.iteration_, self.loss_, self.alpha_, self.probability_= optimize_nonjit(self.sketch_dimension_, self.sketch_dimension_,
-                                                                                  self.lamda_, self.K_,
-                                                                                  self.SK_, self.KS_, self.SKS_,
-                                                                                  self.subsampled_label_, self.alpha_, 
+                                                                                  self.lamda_, K_,
+                                                                                  K_,K_,K_,
+                                                                                  subsampled_label_, self.alpha_, 
                                                                                   self.precision, self.max_iter)
             
         else:
-            self.K_=kernel_matrix( X_train, self.kernel_)
+            K_=kernel_matrix( X_train, self.kernel_)
         
             #print("kernel")
             #print(time()-time_start)
@@ -241,16 +239,16 @@ class SKSVM(object):
             #print("dimesnsion setting")
             #print(time()-time_start)
             #time_start=time()
-            self.SK_  = self.sketcher_.Apply(self.K_, sketch_dimension=self.sketch_dimension_)
+            SK_  = self.sketcher_.Apply(K_, sketch_dimension=self.sketch_dimension_)
            
             #print("SK")
             #print(time()-time_start)
             #time_start=time()
-            self.KS_=np.transpose(self.SK_)
+            KS_=np.transpose(SK_)
             #print("KS")
             #print(time()-time_start)
             #time_start=time()
-            self.SKS_ = self.sketcher_.Apply(self.KS_ , sketch_dimension=self.sketch_dimension_)
+            SKS_ = self.sketcher_.Apply(KS_ , sketch_dimension=self.sketch_dimension_)
             
             #print("SKS")
             #print(time()-time_start)
@@ -261,14 +259,14 @@ class SKSVM(object):
             # optimize 
             if self.if_jit:
                 self.iteration_, self.loss_, self.alpha_, self.probability_= optimize_jit(self.n_train_, self.sketch_dimension_,
-                                                                                  self.lamda_, self.K_,
-                                                                                  self.SK_, self.KS_, self.SKS_,
+                                                                                  self.lamda_, K_,
+                                                                                  SK_, KS_, SKS_,
                                                                                   self.Y_, self.alpha_, 
                                                                                   self.precision, self.max_iter)
             else:
                 self.iteration_, self.loss_, self.alpha_, self.probability_= optimize_nonjit(self.n_train_,  self.sketch_dimension_,
-                                                                                  self.lamda_, self.K_,
-                                                                                  self.SK_, self.KS_, self.SKS_,
+                                                                                  self.lamda_, K_,
+                                                                                  SK_, KS_, SKS_,
                                                                                   self.Y_, self.alpha_, 
                                                                                   self.precision, self.max_iter)
           
@@ -288,14 +286,14 @@ class SKSVM(object):
         
     def predict(self,X_test):
 
-        self.X_test=X_test
-        self.K_test=kernel_matrix(self.X_,self.kernel_,self.X_test)
-        self.SK_test=self.sketcher_.Apply(self.K_test, sketch_dimension=self.sketch_dimension_)
+      
+        K_test=kernel_matrix(self.X_,self.kernel_,X_test)
+        SK_test=self.sketcher_.Apply(K_test, sketch_dimension=self.sketch_dimension_)
         
         
         
         
-        self.test_probability=sigmoid(np.matmul(self.alpha_.T, self.SK_test)).ravel()
+        self.test_probability=sigmoid(np.matmul(self.alpha_.T, SK_test)).ravel()
         
         
         return self.test_probability

@@ -24,7 +24,7 @@ for method in method_seq:
     
     
 print(summarize_log.columns)
-summary = pd.pivot_table(summarize_log, index=[ "sketch_dim", "lambda","method"],columns=["dim","distribution"], values=["accuracy", "time"], aggfunc=[np.mean, np.std, len])
+summary = pd.pivot_table(summarize_log, index=[ "method"],columns=["dim","distribution"], values=["accuracy", "time"], aggfunc=[np.mean, np.std, len])
 
 summary.to_excel("./result/sorted_result/simulation.xlsx")
 
